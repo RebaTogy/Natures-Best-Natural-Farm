@@ -1,0 +1,307 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Farmer {
+  id        String    @id @default(uuid())
+  name      String
+  location  String
+  story     String
+  mediaUrls String    // Comma-separated media URLs
+  avatarUrl String?
+  videoUrl  String?
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  name        String
+  description String
+  category    String      // E.g., Grains, Vegetables, Fruits, Honey
+  farmerId    String
+  farmer      Farmer      @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  mediaUrls   String      // Comma-separated media URLs
+  videoUrl    String?     // Cinematic product video URL
+  batches     Batch[]
+  reviews     Review[]
+  wishlistItems Wishlist[]
+  regionPrices RegionPrice[]
+  publishedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @default(now()) @updatedAt
+}
+
+model Batch {
+  id                String              @id @default(uuid())
+  productId         String
+  product           Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  harvestDate       DateTime
+  totalQuantity     Float               // in kg
+  remainingQuantity Float               // in kg
+  price             Float               // Price per kg
+  status            String              // AVAILABLE, PREBOOK, SOLD_OUT
+  isFuture          Boolean             @default(false)
+  publishAt         DateTime?
+  trackingCode      String?             @unique
+  traceabilityStages TraceabilityStage[]
+  cartItems         CartItem[]
+  orderItems        OrderItem[]
+  preBookings       PreBooking[]
+  trackings         Tracking[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @default(now()) @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  sessionId String
+  batchId   String
+  batch     Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  quantity  Float    // in kg
+  savedForLater Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, batchId])
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("CUSTOMER") // CUSTOMER, ADMIN
+  addresses    Address[]
+  orders       Order[]
+  preBookings  PreBooking[]
+  wishlistItems Wishlist[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String
+  fullName  String
+  phone     String
+  line1     String
+  city      String
+  region    String
+  country   String
+  postalCode String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  totalAmount     Float
+  subtotalAmount  Float       @default(0)
+  shippingFee     Float       @default(0)
+  currency        String      @default("USD")
+  region          String      @default("US")
+  status          String      // PENDING, PAID, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+  trackingId      String      @unique @default(uuid())
+  customerName    String
+  customerEmail   String
+  customerPhone   String
+  shippingAddress String
+  paymentMethod   String      // COD, ONLINE
+  isPreBookOrder  Boolean     @default(false)
+  orderItems      OrderItem[]
+  payments        Payment[]
+  trackings       Tracking[]
+  refunds         Refund[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id       String @id @default(uuid())
+  orderId  String
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  batchId  String
+  batch    Batch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  quantity Float  // in kg
+  price    Float  // price per kg paid at order time
+}
+
+model PreBooking {
+  id              String    @id @default(uuid())
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customerName    String
+  customerEmail   String
+  customerPhone   String
+  shippingAddress String
+  currency        String    @default("USD")
+  region          String    @default("US")
+  batchId         String
+  batch           Batch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  quantity        Float     // in kg
+  advancePaid     Float
+  remainingAmount Float
+  reminderDueAt   DateTime?
+  cancelledAt     DateTime?
+  status          String    // RESERVED, HARVESTING, PROCESSING, READY, DELIVERED, COMPLETED
+  payments        Payment[]
+  trackings       Tracking[]
+  refunds         Refund[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Payment {
+  id            String      @id @default(uuid())
+  orderId       String?
+  order         Order?      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  preBookingId  String?
+  preBooking    PreBooking? @relation(fields: [preBookingId], references: [id], onDelete: Cascade)
+  amount        Float
+  currency      String      @default("USD")
+  status        String      // SUCCESS, FAILED, PENDING
+  type          String      // ADVANCE, FINAL, FULL
+  provider      String      @default("MANUAL") // COD, STRIPE, RAZORPAY, MANUAL
+  checkoutUrl   String?
+  transactionId String
+  createdAt     DateTime    @default(now())
+}
+
+model TraceabilityStage {
+  id          String    @id @default(uuid())
+  batchId     String
+  batch       Batch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  stageOrder  Int       // 1, 2, 3, etc.
+  stageName   String    // E.g., Planting, Harvest, Quality Test, Packing, Delivery
+  status      String    // COMPLETED, ACTIVE, LOCKED
+  description String
+  location    String?
+  isPublic    Boolean   @default(true)
+  date        DateTime?
+  updatedAt   DateTime  @updatedAt
+}
+
+model BulkRequest {
+  id              String   @id @default(uuid())
+  name            String
+  email           String
+  phone           String
+  businessName    String?
+  productInterest String
+  quantity        Float    // Target volume in kg
+  message         String
+  contactPreference String @default("EMAIL") // EMAIL, PHONE, BOTH
+  fileUploads     FileUpload[]
+  status          String   @default("PENDING") // PENDING, RESPONDED, COMPLETED
+  createdAt       DateTime @default(now())
+}
+
+model AnalyticsLog {
+  id         String   @id @default(uuid())
+  eventType  String   // PAGE_VIEW, CART_ADD, CHECKOUT, PURCHASE, PREBOOK, STORY_ENGAGE
+  pageUrl    String?
+  productId  String?
+  batchId    String?
+  sessionId  String
+  createdAt  DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  event     String
+  message   String
+  email     String
+  type      String   // E.g., EMAIL, SMS, ALERT
+  status    String   @default("PENDING") // PENDING, SENT, FAILED
+  scheduledAt DateTime?
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String
+  authorName String @default("Verified Buyer")
+  createdAt DateTime @default(now())
+}
+
+model Wishlist {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+model Tracking {
+  id          String   @id @default(uuid())
+  trackingId  String   @unique @default(uuid())
+  orderId     String?
+  order       Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  preBookingId String?
+  preBooking  PreBooking? @relation(fields: [preBookingId], references: [id], onDelete: Cascade)
+  batchId      String?
+  batch        Batch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  status      String
+  message     String
+  createdAt   DateTime @default(now())
+}
+
+model Refund {
+  id          String   @id @default(uuid())
+  orderId     String?
+  order       Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  preBookingId String?
+  preBooking  PreBooking? @relation(fields: [preBookingId], references: [id], onDelete: Cascade)
+  amount      Float
+  currency    String   @default("USD")
+  reason      String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED, PROCESSED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model FileUpload {
+  id            String   @id @default(uuid())
+  bulkRequestId String?
+  bulkRequest   BulkRequest? @relation(fields: [bulkRequestId], references: [id], onDelete: Cascade)
+  fileName      String
+  fileType      String
+  filePath      String
+  size          Int
+  createdAt     DateTime @default(now())
+}
+
+model RegionPrice {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  region    String
+  currency  String
+  multiplier Float   @default(1)
+  deliveryDaysMin Int @default(3)
+  deliveryDaysMax Int @default(5)
+  isAvailable Boolean @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([productId, region])
+}
