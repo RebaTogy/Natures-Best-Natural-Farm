@@ -7,3 +7,17 @@ Creating turbopack project { dir: 'E:\\Natures Best\\Natures Best Natural Farm',
 
 ○ Compiling / ...
  GET / 200 in 15.6s (next.js: 14.1s, application-code: 1432ms)
+ GET / 200 in 241ms (next.js: 16ms, application-code: 224ms)
+  Reload env: .env
+✓ Compiled in 423ms
+ GET / 200 in 809ms (next.js: 399ms, application-code: 410ms)
+ GET / 200 in 210ms (next.js: 19ms, application-code: 190ms)
+ GET / 200 in 118ms (next.js: 15ms, application-code: 103ms)
+ GET / 200 in 2.2s (next.js: 272ms, application-code: 1915ms)
+ GET / 200 in 389ms (next.js: 24ms, application-code: 366ms)
+○ Compiling /_not-found/page ...
+ GET /images/farmers/cardamom-farmer.jpg 404 in 3.4s (next.js: 3.2s, application-code: 203ms)
+ GET / 200 in 247ms (next.js: 13ms, application-code: 233ms)
+ GET /images/farmers/cardamom-farmer.jpg 404 in 219ms (next.js: 16ms, application-code: 203ms)
+ GET / 200 in 590ms (next.js: 121ms, application-code: 469ms)
+ GET / 200 in 551ms (next.js: 29ms, application-code: 522ms)
