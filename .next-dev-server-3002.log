@@ -1,0 +1,9 @@
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3002
+- Network:       http://169.254.219.35:3002
+- Environments: .env
+✓ Ready in 481ms
+Creating turbopack project { dir: 'E:\\Natures Best\\Natures Best Natural Farm', testMode: true }
+
+○ Compiling / ...
+ GET / 200 in 15.6s (next.js: 14.1s, application-code: 1432ms)
